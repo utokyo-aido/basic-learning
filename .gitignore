@@ -1,0 +1,22 @@
+# ビルド成果物
+/build/
+/dist/
+/node_modules/
+
+# IDE関連
+.idea/
+.vscode/
+
+# キャッシュ
+__pycache__/
+*.pyc
+
+# 環境設定
+.env
+.env.local
+
+# ログ
+*.log
+
+# その他
+.DS_Store
