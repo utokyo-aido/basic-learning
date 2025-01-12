@@ -5,3 +5,7 @@ langchain-openai
 python-dotenv
 openai
 pydantic
+pypdf
+faiss-cpu
+tiktoken
+python-multipart
