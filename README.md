@@ -21,8 +21,8 @@
 
 ### 1. リポジトリのクローン
 ```bash
-git clone [repository-url]
-cd [repository-name]
+git clone https://github.com/utokyo-aido/basic-learning.git
+cd basic-learning
 ```
 
 ### 2. 環境変数の設定
@@ -37,8 +37,8 @@ cp .env.example .env
 ### 3. バックエンドのセットアップ
 1. Python仮想環境の作成と有効化（推奨）
 ```bash
-python -m venv venv
-source venv/bin/activate  # Linuxの場合
+python3 -m venv venv
+source venv/bin/activate  # Mac, Linuxの場合
 # または
 .\venv\Scripts\activate  # Windowsの場合
 ```

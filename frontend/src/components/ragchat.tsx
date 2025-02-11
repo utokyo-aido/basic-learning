@@ -1,34 +1,53 @@
 import { useState, useEffect, useRef } from 'react'
 import { Message } from '../types/chat'
-import { Link } from "react-router-dom"
+import { Link, Navigate, useNavigate } from "react-router-dom"
 import { buttonVariants } from "../components/ui/button"
-import { uploadPdf, sendRagMessage, clearRagData } from '../api/rag'
+import { uploadPdf, sendRagMessage } from '../api/rag'
+import { useSession } from '../contexts/session'
 
 function RagChatUI() {
+  const navigate = useNavigate()
+  const { sessionId } = useSession()
   const [messages, setMessages] = useState<Message[]>([])
   const [inputMessage, setInputMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => {
-    console.log('Current messages:', messages)
-  }, [messages])
+  // セッションがない場合はホームページにリダイレクト
+  if (!sessionId) {
+    return <Navigate to="/" replace />
+  }
 
-  // コンポーネントのアンマウント時にRAGデータをクリア
   useEffect(() => {
-    return () => {
-      console.log('RAGチャットコンポーネントのクリーンアップを実行')
-      clearRagData().catch(error => {
-        console.error('RAGデータのクリアに失敗:', error)
-      })
+    // 初期メッセージを設定
+    if (messages.length === 0) {
+      setMessages([
+        {
+          role: 'assistant',
+          content: 'こんにちは！通常の会話もできますし、PDFをアップロードしていただければその内容について詳しくお答えできます。'
+        }
+      ])
     }
   }, [])
+
+  // ページを離れるときにRAGデータをクリア
+  useEffect(() => {
+    return () => {
+      if (sessionId) {
+        fetch(`http://localhost:8000/rag/clear/${sessionId}`, {
+          method: 'POST'
+        }).catch(error => {
+          console.error('RAGデータのクリアに失敗:', error)
+        })
+      }
+    }
+  }, [sessionId])
 
   const handleFileUpload = async (file: File) => {
     setIsUploading(true)
     try {
-      await uploadPdf(file)
+      await uploadPdf(file, sessionId)
       setMessages(prev => [
         ...prev,
         {
@@ -37,13 +56,18 @@ function RagChatUI() {
         },
         {
           role: 'assistant',
-          content: 'アップロードされたPDFについて、何か聞きたいことはありますか？'
+          content: 'PDFを読み込みました。内容について質問してください。通常の会話も引き続き可能です。'
         }
       ])
     } catch (error) {
       console.error('Error uploading PDF:', error)
       if (error instanceof Error) {
-        alert(`エラーが発生しました: ${error.message}`)
+        if (error.message.includes('Invalid or expired session')) {
+          alert('セッションが無効または期限切れです。APIキーを再登録してください。')
+          navigate('/')
+        } else {
+          alert(`エラーが発生しました: ${error.message}`)
+        }
       } else {
         alert('予期せぬエラーが発生しました')
       }
@@ -65,7 +89,10 @@ function RagChatUI() {
     setIsLoading(true)
 
     try {
-      const response = await sendRagMessage([...messages, newMessage])
+      const response = await sendRagMessage({
+        messages: [...messages, newMessage],
+        session_id: sessionId
+      })
       const assistantMessage: Message = {
         role: 'assistant',
         content: response.response
@@ -75,7 +102,12 @@ function RagChatUI() {
     } catch (error) {
       console.error('Error sending message:', error)
       if (error instanceof Error) {
-        alert(`エラーが発生しました: ${error.message}`)
+        if (error.message.includes('Invalid or expired session')) {
+          alert('セッションが無効または期限切れです。APIキーを再登録してください。')
+          navigate('/')
+        } else {
+          alert(`エラーが発生しました: ${error.message}`)
+        }
       } else {
         alert('予期せぬエラーが発生しました')
       }
@@ -135,7 +167,7 @@ function RagChatUI() {
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-            placeholder="Type your message..."
+            placeholder="メッセージを入力..."
             disabled={isLoading}
             className="flex-1 p-2 border rounded-md mr-2"
           />
@@ -143,7 +175,7 @@ function RagChatUI() {
             onClick={!isLoading ? handleSendMessage : undefined}
             className={`chat-button ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
           >
-            Send
+            送信
           </div>
         </div>
       </div>

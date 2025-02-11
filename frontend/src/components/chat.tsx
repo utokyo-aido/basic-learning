@@ -1,14 +1,20 @@
 import { useState, useEffect} from 'react'
 import { Message } from '../types/chat'
-import { sendMessage} from '../api/chat'
-import { Link } from "react-router-dom"
+import { sendMessage } from '../api/chat'
+import { Link, Navigate } from "react-router-dom"
 import { buttonVariants } from "../components/ui/button"
+import { useSession } from '../contexts/session'
 
 function ChatUI() {
-  console.log('App component initialized')
+  const { sessionId } = useSession()
   const [messages, setMessages] = useState<Message[]>([])
   const [inputMessage, setInputMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+
+  // セッションがない場合はホームページにリダイレクト
+  if (!sessionId) {
+    return <Navigate to="/" replace />
+  }
 
   useEffect(() => {
     console.log('Current messages:', messages)
@@ -33,7 +39,8 @@ function ChatUI() {
     console.log('Sending API request with message:', newMessage)
     try {
       const response = await sendMessage({
-        messages: [...messages, newMessage]
+        messages: [...messages, newMessage],
+        session_id: sessionId
       })
       console.log('Received response:', response)
 
@@ -46,7 +53,12 @@ function ChatUI() {
     } catch (error) {
       console.error('Error sending message:', error)
       if (error instanceof Error) {
-        alert(`エラーが発生しました: ${error.message}`)
+        if (error.message.includes('Invalid or expired session')) {
+          alert('セッションが無効または期限切れです。APIキーを再登録してください。')
+          return <Navigate to="/" replace />
+        } else {
+          alert(`エラーが発生しました: ${error.message}`)
+        }
       } else {
         alert('予期せぬエラーが発生しました')
       }
