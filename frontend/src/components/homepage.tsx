@@ -17,7 +17,7 @@ export default function HomePage() {
 
       {/* メインコンテンツ */}
       <main className="flex-grow flex items-center justify-center relative">
-        <div className="p-8 space-y-10">
+        <div className="p-8">
           <div>
             <Link
               to="/chat"
@@ -28,18 +28,6 @@ export default function HomePage() {
               })}
             >
               Start Chat
-            </Link>
-          </div>
-          <div>
-            <Link
-              to="/ragchat"
-              className={buttonVariants({
-                variant: "monochrome",
-                size: "lg",
-                className: "text-3xl font-semibold px-12 py-6 w-full"
-              })}
-            >
-              Start RAG Chat
             </Link>
           </div>
         </div>
